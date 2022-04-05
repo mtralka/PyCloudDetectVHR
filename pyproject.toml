@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "vhr-cloud-detection-unet"
+version = "0.1.0"
+description = ""
+authors = ["mtralka <mtralka@umd.edu>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.poetry.dev-dependencies]
+black = "^22.3.0"
+mypy = "^0.942"
+notebook = "^6.4.10"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
