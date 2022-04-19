@@ -68,7 +68,7 @@ class VHRCloudDetector:
     ):
 
         self.input: Path = validate_path(
-            input, check_exists=True, check_is_dir=True
+            input, check_exists=True, check_is_dir=False
         )
         self.recursive_input: bool = recursive_input
 
@@ -237,9 +237,6 @@ class VHRCloudDetector:
 
 
     def _batch_predict_array(self, array: np.ndarray) -> np.ndarray:
-        print("start predicting")
-        if self.model is None:
-            ...
 
         number_rows: int = array.shape[0]
         number_cols: int = array.shape[1]
@@ -247,8 +244,8 @@ class VHRCloudDetector:
 
         offsets: List[tuple[int, int]] = list(
             iter_product(
-                range(0, number_cols, array_depth),
-                range(0, number_rows, array_depth),
+                range(0, number_cols, self.window[2]),
+                range(0, number_rows, self.window[2]),
             )
         )
 
@@ -271,7 +268,7 @@ class VHRCloudDetector:
                         window_array - np.mean(window_array, axis=(0, 1))
                     ) / (np.std(window_array, axis=(0, 1)) + 1e-8)
 
-                window_array: np.ndarray = pad_array(
+                window_array = pad_array(
                     array=window_array, target_shape=self.window[0:2]
                 )
 

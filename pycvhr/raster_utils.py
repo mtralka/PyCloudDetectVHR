@@ -141,14 +141,10 @@ def reconcile_window_to_array(
             col_offset : window_ending_col,
         ]
 
-    print("Current mask", current_mask_value.shape)
-
-    print("windowed before", windowed_array.shape)
     windowed_array = windowed_array[
              : current_mask_value.shape[0],
              : current_mask_value.shape[1],
         ]
-    print("after", windowed_array.shape)
 
     merged_results: np.ndarray
     if combination_method.MAX:
