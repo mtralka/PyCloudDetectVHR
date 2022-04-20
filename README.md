@@ -1,8 +1,10 @@
-# VHR-Cloud-Detection-UNet
+# PyCloudVHR Detection (pycvhr)
 
  🚧 **under construction** 🚧 
 
 Very High Resolution (WV2/3) cloud detection using UNet
+
+Currently supports WV2 and WV3
 
 ## Usage
 
