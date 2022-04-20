@@ -100,7 +100,6 @@ class VHRCloudDetector:
         self.normalize: bool = normalize
         self.threshold: float = threshold
 
-
         self.window: Tuple(int, int) = window
         self.stride: int = stride
 
