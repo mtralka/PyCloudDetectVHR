@@ -310,6 +310,7 @@ def get_raster_metadata(file_path: str) -> dict:
 
     # Create `stats` dictionary
     stats: dict = {}
+    stats["file_name"] = Path(file_path).name
     stats["total_bands"] = ds.RasterCount
     stats["x_size"] = ds.RasterXSize
     stats["y_size"] = ds.RasterYSize

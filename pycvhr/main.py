@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import IntEnum
 from itertools import product as iter_product
 from pathlib import Path
@@ -42,7 +43,55 @@ except ImportError:
 
 
 class VHRCloudDetector:
-    """ """
+    """Very High Resolution (VHR) Cloud Detector using UNet
+
+    Attributes
+    ----------
+    `input` : Union[Path, str]
+        Path to input file or dirctory of input files
+    `model_path`: Union[Path, str]
+        Path to pretrained UNet model
+    `input_type` : Union[`SupportedImageTypes`, str]
+        Filter files not of type `input_type` found in `input` if `input` is a directory, default `TIF`
+    `optimizer`: Union[`Optimizers`, str]
+        Desired optimizer to use with model, default `Optimizers.ADADELTA`
+    `platform` : Union[`SuppportedPlatforms`, str]
+        Platform {WV2 or WV3} of `input`, default `SupportedPlatforms.AUTO` autodetects platform type
+    `output_dir` : Optional[Path, str]]
+        Path of output predictions. If not given and `input` is a file - saves to `input` parent directory. If not given
+        and `input` is a directory - saves to `input` directory.
+    `save_prefix` : str
+        Prefix of saved output mask, default `pred_`
+    normalize: bool
+        If True, normalizes input arrays before prediction, default True
+    `batch_size`: int
+        Number of input selections to que together before prediction, default 200
+    `threshold` : float
+        Binary cloud mask detection threshold, default .50
+    `stride` : float
+        Length of window stride for model batching. Higher provides model prediction overlap at cost of compue.
+        Default 256
+    `combination_method` : Union[`CombinationMethod`, str]
+        Method to use to combine model batch results, default `CombinationMethod.MAX`
+    `window` : Tuple[int, int]
+        Size of moving window. Must be the same size as used to train model. Default (256,256)
+    `auto_run` : bool
+        If True, runs `cls.run()` upon model initialization, default True
+    `auto_save` : bool
+        If True, runs `cls.save()` after each input file. Always `True` when multiple files are processed
+        Default, True
+
+    Methods
+    -------
+    `run()`
+        Run cloud detection routine
+    `save(array: Optional[np.ndarray], name: Optional[str], path: Optional[Union[Path, str]], threshold: Optional[float] )`
+        Save cloud mask
+
+    Example
+    -------
+    >>>
+    """
 
     def __init__(
         self,
@@ -123,6 +172,7 @@ class VHRCloudDetector:
         return self._batch_size + 1
 
     def run(self) -> None:
+        """Run cloud detection routine"""
 
         ##
         # Find input file(s)
@@ -171,7 +221,7 @@ class VHRCloudDetector:
             # Save predicted mask
             ##
             if self.auto_save:
-                self.save(array=self.mask, name=input_file.name)
+                self.save(array=self.mask, name=f"{self.save_prefix}{input_file.name}")
 
     def save(
         self,
@@ -180,13 +230,39 @@ class VHRCloudDetector:
         path: Optional[Union[Path, str]] = None,
         threshold: Optional[float] = None,
     ) -> None:
+        """Save binary cloud mask output as a GeoTiff.
+
+        If `name` or `path` are not given: saves to directory `self.output_dir`,
+        with the last processed input file name or the current timestamp.
+
+        Paramters
+        ----------
+        `array` : Optional[np.ndarray]
+            Override cloud mask array. If not given, uses the last generated cloud mask - `self.mask`
+        `name`: Optional[str]
+            Override out file name. If not given, saves to `cls.output_dir` / $timestamp
+        `path` : Optional[Union[Path, str]]
+            Overides `name` to provide full outfile save path.
+        `threshold` : Optional[float]
+            Overrides given `self.threshold` prediction level to generate mask
+        """
 
         if not any((name, path)):
             raise ValueError("`name` or `path` must be given")
 
         array: np.ndarray = array if array is not None else self.mask
         threshold: float = threshold if threshold is not None else self.threshold
-        outfile_path: Path = path if path is not None else self.output_dir / name
+
+        outfile_path: Path
+        if path:
+            outfile_path = path
+        elif name:
+            outfile_path = self.output_dir / name
+        else:
+            name: str = self.input_file_metadata.get(
+                "file_name", str(datetime.now().timestamp())
+            )
+            outfile_path = self.output_dir / f"{self.save_prefix}{name}"
 
         cloud_mask: np.ndarray = np.where(array > threshold, 1, 0)
 
@@ -204,6 +280,9 @@ class VHRCloudDetector:
         ds = None
 
     def _find_input_files(self) -> List[Path]:
+        """Searches input directory (recursive if `self.recursive_input`) to find
+        files with type `self.input_type`
+        """
 
         search_glob: str = "**/*" if self.recursive_input else "*"
         file_generator: Optional[Generator[Path]] = self.input.glob(
@@ -218,6 +297,7 @@ class VHRCloudDetector:
         return list(file_generator)
 
     def _prepare_model(self) -> None:
+        """Loads `self.model_path` UNet model"""
 
         self.model = load_model(
             self.model_path, custom_objects=self.custom_objects, compile=False
@@ -229,6 +309,9 @@ class VHRCloudDetector:
         )
 
     def _batch_predict_array(self, array: np.ndarray) -> np.ndarray:
+        """Read and predict `array` using a sliding window of stride `self.stride`.
+        Batches window predictions in size `self.batch_size` to reduce compute requirements
+        """
 
         number_rows: int = array.shape[0]
         number_cols: int = array.shape[1]

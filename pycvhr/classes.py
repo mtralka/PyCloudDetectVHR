@@ -4,12 +4,16 @@ from pycvhr.core.optimizers import adaDelta, adagrad, adam, nadam
 
 
 class CombinationMethod(Enum):
+    """Combination method used to combine prediction arrays"""
+
     MIN = auto()
     MAX = auto()
     REPLACE = auto()
 
 
 class SupportedImageTypes(Enum):
+    """Supported input types"""
+
     ALL = "*"
     TIF = "tif"
     # PNG = "png"
@@ -17,6 +21,8 @@ class SupportedImageTypes(Enum):
 
 
 class Optimizers(Enum):
+    """UNet optimizer to use"""
+
     ADADELTA = adaDelta
     ADAGRAD = adagrad
     ADAM = adam
@@ -36,6 +42,8 @@ class WV3Bands(IntEnum):
 
 
 class SupportedPlatforms(Enum):
+    """Supported VHR platforms"""
+
     AUTO = auto()
     WV2 = WV2Bands
     WV3 = WV3Bands
