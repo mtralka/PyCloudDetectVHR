@@ -247,9 +247,6 @@ class VHRCloudDetector:
             Overrides given `self.threshold` prediction level to generate mask
         """
 
-        if not any((name, path)):
-            raise ValueError("`name` or `path` must be given")
-
         array: np.ndarray = array if array is not None else self.mask
         threshold: float = threshold if threshold is not None else self.threshold
 
