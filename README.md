@@ -87,3 +87,9 @@ Methods
 `save(array: Optional[np.ndarray], name: Optional[str], path: Optional[Union[Path, str]], threshold: Optional[float] )`
     Save cloud mask
 ```
+
+## Dependencies
+
+- Python 3.8 >=
+- Tensorflow
+- **GDAL** - not listed in `pyproject.toml`
