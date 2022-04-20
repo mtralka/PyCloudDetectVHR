@@ -8,6 +8,7 @@ Currently supports WV2 and WV3
 
 ## Usage
 
+Intelligent defaults
 ```python
 
 from pycvhr import VHRCloudDetector
@@ -16,6 +17,24 @@ input_path: Path | str = "path/to/input/file/or/directory"
 model_path: Path | str = "path/to/model.h5"
 
 detector = VHRCloudDetector(input=input_path, model_path=model_path)
+detector.save(name="cloud_mask.tif")
+```
+
+Using the `MIN` combination method, explicitly set WV2 platform, look for only .tif input files
+```python
+
+from pycvhr import VHRCloudDetector
+from pycvhr import CombinationMethod, SupportedPlatforms, SupportedImageTypes
+
+input_path: Path | str = "path/to/input/file/or/directory"
+model_path: Path | str = "path/to/model.h5"
+
+detector = VHRCloudDetector(
+    input=input_path, model_path=model_path, 
+    combination_method=CombinationMethod.MIN, # or str - 'min'
+    platform=SupportedPlatforms.WV2, # or str - 'WV2'
+    input_type=SupportedImageTypes.TIF # or str - 'tif'
+  )
 detector.save(name="cloud_mask.tif")
 ```
 
