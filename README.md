@@ -1,4 +1,4 @@
-# PyCloudVHR Detection (pycvhr)
+# Python Cloud Detection for VHR (pycvhr)
 
  🚧 **under construction** 🚧 
 
