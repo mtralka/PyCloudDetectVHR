@@ -58,11 +58,9 @@ class VHRCloudDetector:
         normalize: bool = True,
         batch_size: int = 200,
         threshold: float = 0.5,
-        # width: int = 256,
-        # height: int = 256,
-        # stride: int = 128,
+        stride: int = 256,
         combination_method: Union[str, CombinationMethod] = CombinationMethod.MAX,
-        window: Tuple[int, int, int] = (256, 256, 128),  # w, h, s
+        window: Tuple[int, int] = (256, 256),
         auto_run: bool = True,
         auto_save: bool = False,
     ):
@@ -103,10 +101,8 @@ class VHRCloudDetector:
         self.threshold: float = threshold
 
 
-        self.window: Tuple(int, int, int) = window
-        # self.window_width: int = width
-        # self.height: int = height
-        # self.stride: int = stride
+        self.window: Tuple(int, int) = window
+        self.stride: int = stride
 
         self.save_prefix = save_prefix
 
@@ -244,8 +240,8 @@ class VHRCloudDetector:
 
         offsets: List[tuple[int, int]] = list(
             iter_product(
-                range(0, number_cols, self.window[2]),
-                range(0, number_rows, self.window[2]),
+                range(0, number_cols, self.stride),
+                range(0, number_rows, self.stride),
             )
         )
 
