@@ -41,7 +41,7 @@ detector.save(name="cloud_mask.tif")
 ## Docstring
 
 ### VHRCloudDetector
-```
+```markdown
 Very High Resolution (VHR) Cloud Detector using UNet
 
 Attributes
