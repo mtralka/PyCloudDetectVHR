@@ -1,7 +1,6 @@
 from enum import Enum
 from pathlib import Path
-from typing import Union
-from typing import Iterable
+from typing import Iterable, Union
 
 
 def validate_path(
@@ -40,6 +39,7 @@ def validate_enum(enum: Enum, value: Union[str, Enum, None]) -> Enum:
         raise AttributeError(
             f"{value} method not recognized. Select from {','.join([item.name for item in enum.__members__.values()])}"
         )
+
 
 def yield_batch(iterator: Iterable, n: int) -> Iterable:
     for i in range(0, len(iterator), n):

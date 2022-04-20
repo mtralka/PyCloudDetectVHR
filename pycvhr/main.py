@@ -1,45 +1,44 @@
-
 from enum import IntEnum
 from itertools import product as iter_product
 from pathlib import Path
-from typing import Any
-from typing import Dict
-from typing import Generator
-from typing import Iterable
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
-from webbrowser import get
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 import numpy as np
 from tensorflow.keras.models import load_model
 
-from pycvhr.classes import CombinationMethod
-from pycvhr.classes import Optimizers
-from pycvhr.classes import SupportedImageTypes
-from pycvhr.classes import SupportedPlatforms
-from pycvhr.classes import WV2Bands
-from pycvhr.classes import WV3Bands
-from pycvhr.core.losses import accuracy
-from pycvhr.core.losses import dice_coef
-from pycvhr.core.losses import dice_loss
-from pycvhr.core.losses import sensitivity
-from pycvhr.core.losses import specificity
-from pycvhr.core.losses import tversky
-from pycvhr.raster_utils import extract_window_from_array, reconcile_window_to_array
-from pycvhr.raster_utils import open_raster_as_array, create_outfile_dataset, write_array_to_ds,get_raster_metadata
-from pycvhr.raster_utils import pad_array
-from pycvhr.utils import validate_enum
-from pycvhr.utils import validate_path, yield_batch
-
+from pycvhr.classes import (
+    CombinationMethod,
+    Optimizers,
+    SupportedImageTypes,
+    SupportedPlatforms,
+    WV2Bands,
+    WV3Bands,
+)
+from pycvhr.core.losses import (
+    accuracy,
+    dice_coef,
+    dice_loss,
+    sensitivity,
+    specificity,
+    tversky,
+)
+from pycvhr.raster_utils import (
+    create_outfile_dataset,
+    extract_window_from_array,
+    get_raster_metadata,
+    number_of_bands,
+    open_raster_as_array,
+    pad_array,
+    reconcile_window_to_array,
+    write_array_to_ds,
+)
+from pycvhr.utils import validate_enum, validate_path, yield_batch
 
 try:
     import gdal
     import gdalconst
 except ImportError:
-    from osgeo import gdal
-    from osgeo import gdalconst
+    from osgeo import gdal, gdalconst
 
 
 class VHRCloudDetector:
@@ -50,9 +49,9 @@ class VHRCloudDetector:
         input: Union[Path, str],
         model_path: Union[Path, str],
         recursive_input: bool = False,
-        input_type: Union[SupportedImageTypes, str] = SupportedImageTypes.ALL,
+        input_type: Union[SupportedImageTypes, str] = SupportedImageTypes.TIF,
         optimizer: Union[str, Optimizers] = Optimizers.ADADELTA,
-        platform: Union[str, SupportedPlatforms] = SupportedPlatforms.WV2,
+        platform: Union[str, SupportedPlatforms] = SupportedPlatforms.AUTO,
         output_dir: Optional[Union[Path, str]] = None,
         save_prefix: str = "pred_",
         normalize: bool = True,
@@ -65,9 +64,7 @@ class VHRCloudDetector:
         auto_save: bool = False,
     ):
 
-        self.input: Path = validate_path(
-            input, check_exists=True, check_is_dir=False
-        )
+        self.input: Path = validate_path(input, check_exists=True, check_is_dir=False)
         self.recursive_input: bool = recursive_input
 
         self.model_path: Path = validate_path(
@@ -77,8 +74,8 @@ class VHRCloudDetector:
         self.output_dir: Path
         if output_dir is not None:
             self.output_dir = validate_path(
-            output_dir, check_exists=True, check_is_dir=True
-        )
+                output_dir, check_exists=True, check_is_dir=True
+            )
         elif self.input.is_file():
             self.output_dir = self.input.parent
         elif self.input.is_dir():
@@ -154,8 +151,11 @@ class VHRCloudDetector:
 
             target_bands: IntEnum
             if self.platform is SupportedPlatforms.AUTO:
-                # TODO auto find platform
-                target_bands = SupportedPlatforms.WV2
+                num_bands: int = number_of_bands(input_file)
+                if num_bands > 8:
+                    target_bands = WV3Bands
+                else:
+                    target_bands = WV2Bands
             else:
                 target_bands = self.platform.value
 
@@ -173,14 +173,13 @@ class VHRCloudDetector:
             if self.auto_save:
                 self.save(array=self.mask, name=input_file.name)
 
-
-    def save(self, 
+    def save(
+        self,
         array: Optional[np.ndarray] = None,
         name: Optional[str] = None,
-        path: Optional[Union[Path, str]] = None, 
-        threshold: Optional[float] = None
-        
-        ) -> None:
+        path: Optional[Union[Path, str]] = None,
+        threshold: Optional[float] = None,
+    ) -> None:
 
         if not any((name, path)):
             raise ValueError("`name` or `path` must be given")
@@ -193,17 +192,16 @@ class VHRCloudDetector:
 
         ds = create_outfile_dataset(
             file_path=str(outfile_path),
-            x_size = self.input_file_metadata["x_size"],
-            y_size = self.input_file_metadata["y_size"],
-            wkt_projection = self.input_file_metadata["wkt_projection"],
-            geo_transform = self.input_file_metadata["geo_transform"],
-            number_bands = 1,
-            data_type = gdalconst.GDT_Byte
-            )
+            x_size=self.input_file_metadata["x_size"],
+            y_size=self.input_file_metadata["y_size"],
+            wkt_projection=self.input_file_metadata["wkt_projection"],
+            geo_transform=self.input_file_metadata["geo_transform"],
+            number_bands=1,
+            data_type=gdalconst.GDT_Byte,
+        )
 
         ds = write_array_to_ds(ds, cloud_mask)
         ds = None
-
 
     def _find_input_files(self) -> List[Path]:
 
@@ -230,12 +228,10 @@ class VHRCloudDetector:
             metrics=[dice_coef, dice_loss, accuracy, specificity, sensitivity],
         )
 
-
     def _batch_predict_array(self, array: np.ndarray) -> np.ndarray:
 
         number_rows: int = array.shape[0]
         number_cols: int = array.shape[1]
-        array_depth: int = array.shape[2]
 
         offsets: List[tuple[int, int]] = list(
             iter_product(
@@ -269,17 +265,16 @@ class VHRCloudDetector:
 
                 batched_arrays.append(window_array)
 
-
-            prediction = self.model.predict(
-                np.stack(batched_arrays, axis=0)
-            )
+            prediction = self.model.predict(np.stack(batched_arrays, axis=0))
 
             for idx, (col_offset, row_offset) in enumerate(offsets_batch):
                 prediction_array: np.ndarray = np.squeeze(prediction[idx], axis=-1)
                 mask = reconcile_window_to_array(
-                    windowed_array=prediction_array, 
-                    master_array=mask, col_offset=col_offset, row_offset=row_offset,
-                    combination_method=self.combination_method
-                    )
+                    windowed_array=prediction_array,
+                    master_array=mask,
+                    col_offset=col_offset,
+                    row_offset=row_offset,
+                    combination_method=self.combination_method,
+                )
 
         return mask

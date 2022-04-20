@@ -1,35 +1,40 @@
-from curses import window
-from pathlib import Path
-from typing import List
-from typing import Tuple
-from typing import Union
-from pycvhr.classes import CombinationMethod
 from os import path
+from pathlib import Path
+from typing import List, Tuple, Union
 
 import numpy as np
 
+from pycvhr.classes import CombinationMethod
 
 try:
     import gdal
     import gdalconst
     from gdal import Dataset
 except ImportError:
-    from osgeo import gdal
-    from osgeo import gdalconst
+    from osgeo import gdal, gdalconst
     from osgeo.gdal import Dataset
 
 
 def _determine_array_remainder(target: int, maximum: int, window: int) -> int:
-    """ Returns the maximum value within bounds for `target` """
+    """Returns the maximum value within bounds for `target`"""
 
     # if ending number is greater than RGB array size,
     # use RGB array size
     ending_target: int = target + window
 
     if ending_target > maximum:
-        print("Hit Max")
         return maximum
     return ending_target
+
+
+def number_of_bands(target: Union[Path, str]) -> int:
+    """Returns number of raster bands in `target` or 0 if `target` is unreadable"""
+    ds = gdal.Open(str(target))
+
+    if ds is None:
+        return 0
+
+    return int(ds.RasterCount)
 
 
 def open_raster_as_array(
@@ -93,7 +98,7 @@ def extract_window_from_array(
     row_offset: int,
     window_size: Tuple[int, int, int],
 ) -> np.ndarray:
-    """ Returns window with shape `window_size` offset by `{row,col}_offset to `array`"""
+    """Returns window with shape `window_size` offset by `{row,col}_offset to `array`"""
 
     number_rows: int = array.shape[0]
     number_cols: int = array.shape[1]
@@ -113,7 +118,7 @@ def extract_window_from_array(
 
 
 def pad_array(array: np.ndarray, target_shape: Tuple[int, int]) -> np.ndarray:
-    """ Bottom and right Pad 3D input array - `array` - 
+    """Bottom and right Pad 3D input array - `array` -
     to match 2D dimensions of `target_shape`"""
 
     x_pad: int = target_shape[0] - array.shape[0]
@@ -122,12 +127,16 @@ def pad_array(array: np.ndarray, target_shape: Tuple[int, int]) -> np.ndarray:
     # ((top, bottom), (left, right), (3rd dimension))
     return np.pad(array, ((0, x_pad), (0, y_pad), (0, 0)))
 
+
 def reconcile_window_to_array(
-    windowed_array: np.ndarray, master_array:np.ndarray, col_offset: int, row_offset: int,
-    combination_method: CombinationMethod.MAX
+    windowed_array: np.ndarray,
+    master_array: np.ndarray,
+    col_offset: int,
+    row_offset: int,
+    combination_method: CombinationMethod.MAX,
 ):
-    """ Takes input array `windowed_array` which is subset from `master_array` by `{col,row}_offset.
-        Reconciles values using `combination_method` """
+    """Takes input array `windowed_array` which is subset from `master_array` by `{col,row}_offset.
+    Reconciles values using `combination_method`"""
 
     window_ending_col: int = _determine_array_remainder(
         target=col_offset, maximum=master_array.shape[1], window=windowed_array.shape[0]
@@ -137,14 +146,14 @@ def reconcile_window_to_array(
     )
 
     current_mask_value: np.ndarray = master_array[
-            row_offset : window_ending_row,
-            col_offset : window_ending_col,
-        ]
+        row_offset:window_ending_row,
+        col_offset:window_ending_col,
+    ]
 
     windowed_array = windowed_array[
-             : current_mask_value.shape[0],
-             : current_mask_value.shape[1],
-        ]
+        : current_mask_value.shape[0],
+        : current_mask_value.shape[1],
+    ]
 
     merged_results: np.ndarray
     if combination_method.MAX:
@@ -158,8 +167,7 @@ def reconcile_window_to_array(
         raise ValueError(f"{combination_method.name} not supported")
 
     master_array[
-        row_offset : window_ending_row,
-        col_offset : window_ending_col
+        row_offset:window_ending_row, col_offset:window_ending_col
     ] = merged_results
 
     return master_array
@@ -256,7 +264,7 @@ def write_array_to_ds(
     """
     # Confirm `ds` is valid
     if ds is None:
-        raise ValueError(f"`ds` is None")
+        raise ValueError("`ds` is None")
 
     number_bands: int = ds.RasterCount
 
@@ -271,8 +279,8 @@ def write_array_to_ds(
     # Set outfile `no_data_value`
     ds.GetRasterBand(band).SetNoDataValue(no_data_value)
 
-    return 
-    
+    return
+
 
 def get_raster_metadata(file_path: str) -> dict:
     """Opens and returns raster metadata

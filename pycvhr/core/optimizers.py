@@ -1,4 +1,4 @@
-from tensorflow.keras.optimizers import Adam, Adadelta, Adagrad, Nadam
+from tensorflow.keras.optimizers import Adadelta, Adagrad, Adam, Nadam
 
 adaDelta = Adadelta(lr=1.0, rho=0.95, epsilon=None, decay=0.0)
 adam = Adam(lr=5.0e-05, decay=0.0, beta_1=0.9, beta_2=0.999, epsilon=1.0e-8)

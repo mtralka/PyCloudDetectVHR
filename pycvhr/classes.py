@@ -1,11 +1,6 @@
-from enum import Enum
-from enum import IntEnum
-from enum import auto
+from enum import Enum, IntEnum, auto
 
-from pycvhr.core.optimizers import adaDelta
-from pycvhr.core.optimizers import adagrad
-from pycvhr.core.optimizers import adam
-from pycvhr.core.optimizers import nadam
+from pycvhr.core.optimizers import adaDelta, adagrad, adam, nadam
 
 
 class CombinationMethod(Enum):
@@ -17,8 +12,8 @@ class CombinationMethod(Enum):
 class SupportedImageTypes(Enum):
     ALL = "*"
     TIF = "tif"
-    PNG = "png"
-    JPG = "jpg"
+    # PNG = "png"
+    # JPG = "jpg"
 
 
 class Optimizers(Enum):

@@ -1,6 +1,6 @@
-import tensorflow.keras.backend as K
 import numpy as np
 import tensorflow as tf
+import tensorflow.keras.backend as K
 
 
 def tversky(y_true, y_pred, alpha=0.6, beta=0.4):
