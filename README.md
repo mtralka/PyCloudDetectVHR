@@ -31,6 +31,7 @@ model_path: Path | str = "path/to/model.h5"
 
 detector = VHRCloudDetector(
     input=input_path, model_path=model_path, 
+    model_path: Path | str = "path/to/model.h5"
     combination_method=CombinationMethod.MIN, # or str - 'min'
     platform=SupportedPlatforms.WV2, # or str - 'WV2'
     input_type=SupportedImageTypes.TIF # or str - 'tif'
